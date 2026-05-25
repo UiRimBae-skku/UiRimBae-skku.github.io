@@ -40,4 +40,4 @@ df["Time_Gap"] = df["Movie_Year"] - df["Book_Year"]
 # ── Sidebar ──────────────────────────────────────────────────
 with st.sidebar:
     st.header("🎛️ Filter Adaptations")
-    selected_genres = st.multiselect("Select Genre", options=df["Genre"].unique(), default=df["Genre"].
+    selected_genres = st.multiselect("Select Genre", options=df["Genre"].unique(), default=df["Genre"].unique())
