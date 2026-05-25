@@ -5,7 +5,7 @@ import plotly.express as px
 # ── Page Config ──────────────────────────────────────────────
 st.set_page_config(page_title="🎬 Page to Screen", layout="wide", page_icon="🎬")
 
-# ── Custom CSS (영화 느낌의 다크 테마) ────────────────────────
+# ── Custom CSS ────────────────────────
 st.markdown("""
 <style>
     .big-title {
@@ -22,7 +22,7 @@ st.markdown("""
 </style>
 """, unsafe_allow_html=True)
 
-# ── Session State & Data (샘플 데이터) ─────────────────────────
+# ── Session State & Data ─────────────────────────
 if "adaptations" not in st.session_state:
     st.session_state.adaptations = [
         {"Title": "Gone Girl", "Genre": "Crime", "Book_Rating": 4.1, "Movie_Rating": 87, "Box_Office": 369000000, "Book_Year": 2012, "Movie_Year": 2014},
@@ -41,3 +41,60 @@ df["Time_Gap"] = df["Movie_Year"] - df["Book_Year"]
 with st.sidebar:
     st.header("🎛️ Filter Adaptations")
     selected_genres = st.multiselect("Select Genre", options=df["Genre"].unique(), default=df["Genre"].unique())
+    min_box_office = st.slider("Minimum Box Office ($M)", 0, 1500, 0, step=50)
+
+# Filter Logic
+filtered_df = df[(df["Genre"].isin(selected_genres)) & (df["Box_Office"] >= min_box_office * 1000000)]
+
+# ── Main UI ──────────────────────────────────────────────────
+st.markdown('<p class="big-title">🎬 From Page to Screen</p>', unsafe_allow_html=True)
+st.markdown('<p class="subtitle">Adaptation Audience Retention & Financial ROI Dashboard</p>', unsafe_allow_html=True)
+
+# Metrics Row
+m1, m2, m3, m4 = st.columns(4)
+m1.metric("Total Adaptations Analyzed", len(filtered_df))
+m2.metric("Total Box Office", f"${filtered_df['Box_Office'].sum() / 1e9:.2f}B")
+m3.metric("Avg Audience Score", f"{filtered_df['Movie_Rating'].mean():.1f}/100")
+m4.metric("Avg Development Gap", f"{filtered_df['Time_Gap'].mean():.1f} Years")
+
+st.markdown("---")
+
+# ── Charts ───────────────────────────────────────────────────
+st.subheader("⚖️ The Critical Divide: Book vs. Movie")
+fig_scatter = px.scatter(
+    filtered_df, x="Book_Rating", y="Movie_Rating", size="Box_Office", color="Genre",
+    hover_name="Title", size_max=40, template="plotly_dark",
+    labels={"Book_Rating": "Goodreads Rating (1-5)", "Movie_Rating": "TMDB Audience Score (1-100)"}
+)
+st.plotly_chart(fig_scatter, use_container_width=True)
+
+col1, col2 = st.columns(2)
+
+with col1:
+    st.subheader("⏳ Development Gap vs Box Office")
+    fig_bar = px.bar(
+        filtered_df, x="Title", y="Box_Office", color="Time_Gap",
+        color_continuous_scale="Reds", template="plotly_dark",
+        labels={"Box_Office": "Box Office Revenue ($)", "Time_Gap": "Years to Screen"}
+    )
+    st.plotly_chart(fig_bar, use_container_width=True)
+
+with col2:
+    st.subheader("💰 Financial ROI by Genre")
+    fig_donut = px.pie(
+        filtered_df, names="Genre", values="Box_Office", hole=0.4,
+        template="plotly_dark", color_discrete_sequence=px.colors.qualitative.Pastel
+    )
+    st.plotly_chart(fig_donut, use_container_width=True)
+
+st.subheader("📋 Core Dataset")
+st.dataframe(
+    filtered_df,
+    column_config={
+        "Box_Office": st.column_config.NumberColumn("Global Box Office (USD)", format="$%d"),
+    },
+    use_container_width=True, hide_index=True
+)
+
+st.markdown("---")
+st.markdown('<div style="text-align:center; color:#94a3b8; font-size:0.9rem;">Film & Media Analysis — Final Project Dashboard</div>', unsafe_allow_html=True)
